@@ -8,6 +8,8 @@ import ReactFlow, {
   Connection,
   useNodesState,
   useEdgesState,
+  useReactFlow,
+  ReactFlowProvider,
   ConnectionMode,
   MarkerType,
   NodeTypes,
@@ -32,10 +34,11 @@ const edgeColors: Record<ConnectionType, string> = {
   [ConnectionType.MODIFIES]: '#ec4899',
 };
 
-export const OntologyGraph: React.FC = () => {
+const OntologyGraphInner: React.FC = () => {
   const { nodes: storeNodes, edges: storeEdges, addEdge: addStoreEdge, updateNode, conflicts } = useOntologyStore();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const { fitView } = useReactFlow();
 
   // Convert store nodes to React Flow nodes
   useEffect(() => {
@@ -76,6 +79,20 @@ export const OntologyGraph: React.FC = () => {
     }));
     setEdges(flowEdges);
   }, [storeEdges, setEdges]);
+
+  // Auto-fit view when nodes change
+  useEffect(() => {
+    if (nodes.length > 0) {
+      // Small delay to ensure nodes are rendered
+      setTimeout(() => {
+        fitView({
+          padding: 0.2,
+          duration: 400,
+          maxZoom: 1,
+        });
+      }, 50);
+    }
+  }, [nodes.length, fitView]);
 
   // Handle node position updates
   const handleNodeDragStop = useCallback(
@@ -122,7 +139,7 @@ export const OntologyGraph: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex-1 relative">
+    <div className="w-full h-full absolute inset-0">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -132,27 +149,29 @@ export const OntologyGraph: React.FC = () => {
         onNodeDragStop={handleNodeDragStop}
         nodeTypes={nodeTypes}
         connectionMode={ConnectionMode.Loose}
-        fitView
         minZoom={0.1}
         maxZoom={2}
         defaultEdgeOptions={{
           type: 'smoothstep',
           animated: false,
         }}
+        proOptions={{ hideAttribution: true }}
       >
         <Background gap={16} size={1} color="#e5e7eb" />
-        <Controls />
+        <Controls showInteractive={false} />
         <MiniMap
           nodeColor={minimapNodeColor}
           maskColor="rgba(0, 0, 0, 0.1)"
           style={{
             backgroundColor: '#f9fafb',
           }}
+          zoomable
+          pannable
         />
       </ReactFlow>
 
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-4 max-w-xs z-10">
+      <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-4 max-w-xs z-10 pointer-events-auto">
         <h3 className="font-semibold text-sm mb-3">Connection Types</h3>
         <div className="space-y-2">
           {Object.entries(edgeColors).map(([type, color]) => (
@@ -172,5 +191,14 @@ export const OntologyGraph: React.FC = () => {
       {/* Conflict Panel */}
       {conflicts.length > 0 && <ConflictPanel />}
     </div>
+  );
+};
+
+// Export wrapped in ReactFlowProvider
+export const OntologyGraph: React.FC = () => {
+  return (
+    <ReactFlowProvider>
+      <OntologyGraphInner />
+    </ReactFlowProvider>
   );
 };
