@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Upload, FileText, Loader2, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Upload, FileText, Loader2, AlertCircle, Sparkles } from 'lucide-react';
 import { useOntologyStore } from '../stores/ontologyStore';
 import { getOpenAIService } from '../services/openaiService';
+import { generateDemoData } from '../utils/demoData';
 
 export const SidePanel: React.FC = () => {
   const { isSidePanelOpen, toggleSidePanel, isAnalyzing, setIsAnalyzing, loadOntology, nodes, edges } = useOntologyStore();
@@ -118,6 +119,23 @@ export const SidePanel: React.FC = () => {
     reader.readAsText(file);
   };
 
+  const handleLoadDemo = () => {
+    const { nodes: demoNodes, edges: demoEdges } = generateDemoData();
+    loadOntology({
+      nodes: demoNodes,
+      edges: demoEdges,
+      conflicts: [],
+      suggestions: ['This is demo data showing a customer support AI system prompt ontology'],
+      metadata: {
+        totalTokens: 0,
+        nodeCount: demoNodes.length,
+        edgeCount: demoEdges.length,
+        analyzedAt: new Date()
+      }
+    });
+    setError(null);
+  };
+
   return (
     <>
       <button
@@ -194,7 +212,7 @@ export const SidePanel: React.FC = () => {
           <button
             onClick={handleAnalyze}
             disabled={isAnalyzing || !content.trim() || !apiKey.trim()}
-            className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+            className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed transition-colors flex items-center justify-center mb-3"
           >
             {isAnalyzing ? (
               <>
@@ -206,11 +224,22 @@ export const SidePanel: React.FC = () => {
             )}
           </button>
 
+          {/* Demo Data Button */}
+          <button
+            onClick={handleLoadDemo}
+            disabled={isAnalyzing}
+            className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+          >
+            <Sparkles size={20} className="mr-2" />
+            Load Demo Data
+          </button>
+
           {/* Help Text */}
           <div className="mt-6 p-4 bg-gray-800 rounded-lg text-sm">
             <h3 className="font-semibold mb-2">How it works:</h3>
             <ol className="list-decimal list-inside space-y-1 text-gray-300">
-              <li>Enter your OpenAI API key</li>
+              <li>Try "Load Demo Data" to see the graph instantly</li>
+              <li>Or enter your OpenAI API key</li>
               <li>Paste or upload your system prompts</li>
               <li>Click "Analyze" to generate the ontology</li>
               <li>View and edit the graph in the main panel</li>

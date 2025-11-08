@@ -21,6 +21,16 @@ body,
 }
 
 /* React Flow custom styles */
+.react-flow__renderer {
+  width: 100%;
+  height: 100%;
+}
+
+.react-flow__container {
+  width: 100%;
+  height: 100%;
+}
+
 .react-flow__node {
   cursor: pointer;
 }
@@ -38,6 +48,11 @@ body,
   height: 12px;
   border-radius: 50%;
   border: 2px solid white;
+  background-color: #3b82f6;
+}
+
+.react-flow__handle:hover {
+  background-color: #2563eb;
 }
 
 .react-flow__handle-top {
@@ -46,6 +61,10 @@ body,
 
 .react-flow__handle-bottom {
   bottom: -6px;
+}
+
+.react-flow__node.selected {
+  box-shadow: 0 0 0 2px #3b82f6;
 }
 
 /* Scrollbar Styling */
