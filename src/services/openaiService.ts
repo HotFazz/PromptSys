@@ -66,13 +66,14 @@ export class OpenAIService {
    * Build system prompt for analysis
    */
   private buildAnalysisSystemPrompt(_request: AIAnalysisRequest): string {
-    return `You are an expert in analyzing and structuring AI system prompts into ontologies.
+    return `You are an expert in analyzing and structuring AI system prompts into hierarchical ontologies.
 
 Your task is to analyze the provided system prompt content and extract a structured ontology that shows:
-1. Individual prompt components (nodes)
-2. Relationships between components (edges)
+1. Individual prompt components (nodes) with hierarchical metadata
+2. Relationships between components including parent-child hierarchies (edges)
 3. Potential conflicts or ambiguities
-4. Suggestions for improvement
+4. Altitude levels and scope for context management
+5. Suggestions for improvement
 
 Categories for prompt nodes:
 - instruction: Direct instructions or commands
@@ -90,22 +91,78 @@ Categories for prompt nodes:
 
 Connection types:
 - depends_on: Node A requires Node B to function properly
-- extends: Node A builds upon or extends Node B
+- extends: Node A builds upon or extends Node B (often parent-child)
 - conflicts_with: Node A contradicts Node B
 - related_to: Node A is semantically related to Node B
 - precedes: Node A should come before Node B
 - validates: Node A validates or checks Node B
 - modifies: Node A modifies the behavior of Node B
 
+Altitude levels (strategic abstraction):
+- meta: High-level philosophy, core values, overarching principles (top of hierarchy)
+- strategic: Major domains, role definitions, key objectives
+- tactical: Specific guidelines, communication styles, response patterns
+- operational: Detailed procedures, workflows, escalation criteria
+- implementation: Concrete examples, code snippets, specific demonstrations (bottom)
+
+Scope levels (context window):
+- global: Always in context, never removed (highest priority)
+- session: Persistent for entire conversation
+- task: Active during specific task execution
+- local: Minimal scope, specific to immediate context
+- conditional: Loaded only when conditions are met
+
+Hierarchical structure:
+- Identify parent-child relationships (e.g., "Response Structure" is parent of "Technical Issue Handling")
+- Assign depth levels (0 = root, 1+ = children)
+- Determine altitude based on abstraction level
+- Set scope based on persistence requirements
+- Estimate specificity (0-1): how concrete vs abstract
+- Estimate flexibility (0-1): how rigid vs adaptable
+- Assign context priority (0-100): importance for token budget allocation
+
 Respond with a JSON object containing:
 {
-  "nodes": [{ "title": string, "content": string, "category": string, "metadata": { "complexity": "low"|"medium"|"high", "tags": string[] } }],
-  "edges": [{ "source": string (node title), "target": string (node title), "type": string, "label": string? }],
-  "conflicts": [{ "type": string, "severity": "low"|"medium"|"high", "description": string, "suggestions": string[] }],
+  "nodes": [{
+    "title": string,
+    "content": string,
+    "category": string,
+    "metadata": {
+      "complexity": "low"|"medium"|"high",
+      "tags": string[]
+    },
+    "hierarchy": {
+      "parentTitle": string | null,
+      "altitude": "meta"|"strategic"|"tactical"|"operational"|"implementation",
+      "scope": "global"|"session"|"task"|"local"|"conditional",
+      "specificity": number (0-1),
+      "flexibility": number (0-1),
+      "contextPriority": number (0-100),
+      "estimatedTokens": number,
+      "compressionHint": "preserve"|"summarize"|"optional"|"defer"
+    }
+  }],
+  "edges": [{
+    "source": string (node title),
+    "target": string (node title),
+    "type": string,
+    "label": string?
+  }],
+  "conflicts": [{
+    "type": string,
+    "severity": "low"|"medium"|"high",
+    "description": string,
+    "suggestions": string[]
+  }],
   "suggestions": string[]
 }
 
-Be thorough in identifying logical connections and potential conflicts.`;
+Be thorough in identifying:
+- Hierarchical parent-child relationships
+- Appropriate altitude levels based on abstraction
+- Correct scope based on usage patterns
+- Logical connections and potential conflicts
+- Token budget implications`;
   }
 
   /**
@@ -143,19 +200,71 @@ Be thorough in identifying logical connections and potential conflicts.`;
       suggestions: []
     };
 
+    // Create a map of titles to track parent references
+    const titleToIndexMap = new Map<string, number>();
+
     // Process nodes
     if (Array.isArray(parsed.nodes)) {
-      response.nodes = parsed.nodes.map((node: any) => ({
-        title: node.title || 'Untitled',
-        content: node.content || '',
-        category: this.validateCategory(node.category),
-        metadata: {
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          complexity: node.metadata?.complexity || 'medium',
-          tags: Array.isArray(node.metadata?.tags) ? node.metadata.tags : []
+      // First pass: create basic nodes and map titles
+      response.nodes = parsed.nodes.map((node: any, index: number) => {
+        const title = node.title || 'Untitled';
+        titleToIndexMap.set(title, index);
+
+        const processedNode: any = {
+          title,
+          content: node.content || '',
+          category: this.validateCategory(node.category),
+          metadata: {
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            complexity: node.metadata?.complexity || 'medium',
+            tags: Array.isArray(node.metadata?.tags) ? node.metadata.tags : []
+          }
+        };
+
+        // Add hierarchy fields if present
+        if (node.hierarchy) {
+          const h = node.hierarchy;
+
+          if (h.altitude) {
+            processedNode.altitude = this.validateAltitude(h.altitude);
+          }
+
+          if (h.scope) {
+            processedNode.scope = this.validateScope(h.scope);
+          }
+
+          if (typeof h.specificity === 'number') {
+            processedNode.specificity = Math.max(0, Math.min(1, h.specificity));
+          }
+
+          if (typeof h.flexibility === 'number') {
+            processedNode.flexibility = Math.max(0, Math.min(1, h.flexibility));
+          }
+
+          if (typeof h.contextPriority === 'number') {
+            processedNode.contextPriority = Math.max(0, Math.min(100, h.contextPriority));
+          }
+
+          if (typeof h.estimatedTokens === 'number') {
+            processedNode.estimatedTokens = Math.max(0, h.estimatedTokens);
+          }
+
+          if (h.compressionHint) {
+            processedNode.compressionHint = this.validateCompressionHint(h.compressionHint);
+          }
+
+          // Store parent title temporarily (will resolve to parent ID later)
+          if (h.parentTitle) {
+            processedNode._parentTitle = h.parentTitle;
+          }
         }
-      }));
+
+        return processedNode;
+      });
+
+      // Second pass: resolve parent titles to parent IDs
+      // Note: This will be done in the calling code after nodes get IDs
     }
 
     // Process edges
@@ -208,6 +317,42 @@ Be thorough in identifying logical connections and potential conflicts.`;
       return normalized as ConnectionType;
     }
     return ConnectionType.RELATED_TO;
+  }
+
+  /**
+   * Validate and normalize altitude
+   */
+  private validateAltitude(altitude: string): any {
+    const normalized = altitude?.toLowerCase();
+    const validAltitudes = ['meta', 'strategic', 'tactical', 'operational', 'implementation'];
+    if (validAltitudes.includes(normalized)) {
+      return normalized;
+    }
+    return 'tactical'; // Default to tactical
+  }
+
+  /**
+   * Validate and normalize scope
+   */
+  private validateScope(scope: string): any {
+    const normalized = scope?.toLowerCase();
+    const validScopes = ['global', 'session', 'task', 'local', 'conditional'];
+    if (validScopes.includes(normalized)) {
+      return normalized;
+    }
+    return 'task'; // Default to task
+  }
+
+  /**
+   * Validate and normalize compression hint
+   */
+  private validateCompressionHint(hint: string): 'preserve' | 'summarize' | 'optional' | 'defer' {
+    const normalized = hint?.toLowerCase();
+    const validHints = ['preserve', 'summarize', 'optional', 'defer'];
+    if (validHints.includes(normalized)) {
+      return normalized as 'preserve' | 'summarize' | 'optional' | 'defer';
+    }
+    return 'summarize'; // Default to summarize
   }
 
   /**
