@@ -1,4 +1,4 @@
-import { PromptNode, PromptEdge, Conflict, ConflictType, ConnectionType } from '../types';
+import { PromptNode, PromptEdge, Conflict, ConflictType, ConnectionType, PromptAltitude, PromptScope } from '../types';
 
 export class ConflictDetector {
   /**
@@ -7,11 +7,221 @@ export class ConflictDetector {
   static detectConflicts(nodes: PromptNode[], edges: PromptEdge[]): Conflict[] {
     const conflicts: Conflict[] = [];
 
+    // Original conflict detection
     conflicts.push(...this.detectCircularDependencies(nodes, edges));
     conflicts.push(...this.detectContradictions(nodes, edges));
     conflicts.push(...this.detectOrphanedNodes(nodes, edges));
     conflicts.push(...this.detectDuplicates(nodes));
     conflicts.push(...this.detectAmbiguousRelationships(nodes, edges));
+
+    // Hierarchical conflict detection
+    conflicts.push(...this.detectHierarchyConflicts(nodes));
+
+    return conflicts;
+  }
+
+  /**
+   * Detect hierarchy-specific conflicts
+   */
+  private static detectHierarchyConflicts(nodes: PromptNode[]): Conflict[] {
+    const conflicts: Conflict[] = [];
+
+    // Check if nodes have hierarchy information
+    const hasHierarchy = nodes.some(n => n.parentId || n.altitude || n.scope);
+    if (!hasHierarchy) return conflicts;
+
+    conflicts.push(...this.detectParentChildPriorityMismatch(nodes));
+    conflicts.push(...this.detectAltitudeInconsistency(nodes));
+    conflicts.push(...this.detectScopeConflicts(nodes));
+    conflicts.push(...this.detectCircularParentReferences(nodes));
+    conflicts.push(...this.detectDepthInconsistency(nodes));
+
+    return conflicts;
+  }
+
+  /**
+   * Detect when child has higher priority than parent
+   */
+  private static detectParentChildPriorityMismatch(nodes: PromptNode[]): Conflict[] {
+    const conflicts: Conflict[] = [];
+
+    nodes.forEach(node => {
+      if (node.parentId && node.contextPriority !== undefined) {
+        const parent = nodes.find(n => n.id === node.parentId);
+        if (parent && parent.contextPriority !== undefined) {
+          if (node.contextPriority > parent.contextPriority) {
+            conflicts.push({
+              id: `priority-mismatch-${node.id}`,
+              type: ConflictType.AMBIGUOUS_RELATIONSHIP,
+              severity: 'medium',
+              nodeIds: [node.id, parent.id],
+              description: `"${node.title}" (priority ${node.contextPriority}) has higher priority than its parent "${parent.title}" (priority ${parent.contextPriority})`,
+              suggestions: [
+                'Adjust priorities so parent has equal or higher priority than children',
+                'Consider whether this is truly a parent-child relationship',
+                'Review context budget allocation strategy'
+              ]
+            });
+          }
+        }
+      }
+    });
+
+    return conflicts;
+  }
+
+  /**
+   * Detect altitude inconsistencies in hierarchy
+   */
+  private static detectAltitudeInconsistency(nodes: PromptNode[]): Conflict[] {
+    const conflicts: Conflict[] = [];
+    const altitudeOrder = [
+      PromptAltitude.META,
+      PromptAltitude.STRATEGIC,
+      PromptAltitude.TACTICAL,
+      PromptAltitude.OPERATIONAL,
+      PromptAltitude.IMPLEMENTATION
+    ];
+
+    nodes.forEach(node => {
+      if (node.parentId && node.altitude) {
+        const parent = nodes.find(n => n.id === node.parentId);
+        if (parent && parent.altitude) {
+          const childAltitudeIndex = altitudeOrder.indexOf(node.altitude);
+          const parentAltitudeIndex = altitudeOrder.indexOf(parent.altitude);
+
+          if (childAltitudeIndex < parentAltitudeIndex) {
+            conflicts.push({
+              id: `altitude-inconsistency-${node.id}`,
+              type: ConflictType.AMBIGUOUS_RELATIONSHIP,
+              severity: 'high',
+              nodeIds: [node.id, parent.id],
+              description: `"${node.title}" (${node.altitude}) is at higher altitude than its parent "${parent.title}" (${parent.altitude}). Children should be at same or lower altitude.`,
+              suggestions: [
+                'Adjust altitude levels to maintain hierarchy (parent should be higher)',
+                'Review parent-child relationship - may be incorrect',
+                'Consider restructuring the hierarchy'
+              ]
+            });
+          }
+        }
+      }
+    });
+
+    return conflicts;
+  }
+
+  /**
+   * Detect scope conflicts (child with broader scope than parent)
+   */
+  private static detectScopeConflicts(nodes: PromptNode[]): Conflict[] {
+    const conflicts: Conflict[] = [];
+    const scopeOrder = [
+      PromptScope.LOCAL,
+      PromptScope.CONDITIONAL,
+      PromptScope.TASK,
+      PromptScope.SESSION,
+      PromptScope.GLOBAL
+    ];
+
+    nodes.forEach(node => {
+      if (node.parentId && node.scope) {
+        const parent = nodes.find(n => n.id === node.parentId);
+        if (parent && parent.scope) {
+          const childScopeIndex = scopeOrder.indexOf(node.scope);
+          const parentScopeIndex = scopeOrder.indexOf(parent.scope);
+
+          if (childScopeIndex > parentScopeIndex) {
+            conflicts.push({
+              id: `scope-conflict-${node.id}`,
+              type: ConflictType.AMBIGUOUS_RELATIONSHIP,
+              severity: 'medium',
+              nodeIds: [node.id, parent.id],
+              description: `"${node.title}" (${node.scope} scope) has broader scope than its parent "${parent.title}" (${parent.scope} scope)`,
+              suggestions: [
+                'Children typically inherit or narrow their parent\'s scope',
+                'Review if this relationship makes semantic sense',
+                'Consider promoting child to sibling or higher level'
+              ]
+            });
+          }
+        }
+      }
+    });
+
+    return conflicts;
+  }
+
+  /**
+   * Detect circular parent references
+   */
+  private static detectCircularParentReferences(nodes: PromptNode[]): Conflict[] {
+    const conflicts: Conflict[] = [];
+    const visited = new Set<string>();
+
+    nodes.forEach(node => {
+      if (visited.has(node.id)) return;
+
+      const path: string[] = [];
+      let current: PromptNode | undefined = node;
+
+      while (current && !visited.has(current.id)) {
+        if (path.includes(current.id)) {
+          // Found a cycle
+          const cycleStart = path.indexOf(current.id);
+          const cycleNodes = path.slice(cycleStart);
+          const cycleNodeObjects = cycleNodes.map(id => nodes.find(n => n.id === id)).filter(Boolean) as PromptNode[];
+
+          conflicts.push({
+            id: `parent-cycle-${current.id}`,
+            type: ConflictType.CIRCULAR_DEPENDENCY,
+            severity: 'high',
+            nodeIds: cycleNodes,
+            description: `Circular parent-child reference detected: ${cycleNodeObjects.map(n => n.title).join(' → ')}`,
+            suggestions: [
+              'Break the cycle by removing one parent reference',
+              'Restructure the hierarchy to remove circular dependencies'
+            ]
+          });
+          break;
+        }
+
+        path.push(current.id);
+        visited.add(current.id);
+        current = current.parentId ? nodes.find(n => n.id === current!.parentId) : undefined;
+      }
+    });
+
+    return conflicts;
+  }
+
+  /**
+   * Detect depth inconsistencies
+   */
+  private static detectDepthInconsistency(nodes: PromptNode[]): Conflict[] {
+    const conflicts: Conflict[] = [];
+
+    nodes.forEach(node => {
+      if (node.parentId !== undefined && node.depth !== undefined) {
+        const parent = nodes.find(n => n.id === node.parentId);
+        if (parent && parent.depth !== undefined) {
+          const expectedDepth = parent.depth + 1;
+          if (node.depth !== expectedDepth) {
+            conflicts.push({
+              id: `depth-inconsistency-${node.id}`,
+              type: ConflictType.AMBIGUOUS_RELATIONSHIP,
+              severity: 'low',
+              nodeIds: [node.id, parent.id],
+              description: `"${node.title}" has depth ${node.depth} but parent "${parent.title}" has depth ${parent.depth}. Expected child depth: ${expectedDepth}`,
+              suggestions: [
+                'Recalculate depth values based on hierarchy',
+                'Update depth when moving nodes in hierarchy'
+              ]
+            });
+          }
+        }
+      }
+    });
 
     return conflicts;
   }
