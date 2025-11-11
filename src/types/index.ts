@@ -1,5 +1,13 @@
 // Core type definitions for the System Prompts Ontology
 
+import {
+  PromptAltitude,
+  PromptScope,
+  CompositionStrategy,
+  ActivationCondition,
+  TemplateVariable
+} from './hierarchy';
+
 export interface PromptNode {
   id: string;
   title: string;
@@ -7,6 +15,43 @@ export interface PromptNode {
   category: PromptCategory;
   metadata: NodeMetadata;
   position: { x: number; y: number };
+
+  // Optional hierarchy fields (backward compatible)
+  parentId?: string;
+  childIds?: string[];
+  depth?: number;
+  path?: string[];
+
+  // Optional altitude and specificity
+  altitude?: PromptAltitude;
+  specificity?: number;
+  flexibility?: number;
+
+  // Optional scope and context
+  scope?: PromptScope;
+  contextPriority?: number;
+  activationConditions?: ActivationCondition[];
+
+  // Optional composition
+  isComposite?: boolean;
+  compositionStrategy?: CompositionStrategy;
+
+  // Optional template
+  isTemplate?: boolean;
+  templateVariables?: Record<string, TemplateVariable>;
+
+  // Optional context management
+  tokenBudget?: number;
+  estimatedTokens?: number;
+  compressionHint?: 'preserve' | 'summarize' | 'optional' | 'defer';
+
+  // Optional dependencies
+  requiredParents?: string[];
+  incompatibleWith?: string[];
+
+  // Optional versioning
+  version?: string;
+  parentVersion?: string;
 }
 
 export interface PromptEdge {
@@ -116,3 +161,6 @@ export interface AIAnalysisResponse {
   conflicts: Conflict[];
   suggestions: string[];
 }
+
+// Re-export hierarchy types for convenience
+export * from './hierarchy';
