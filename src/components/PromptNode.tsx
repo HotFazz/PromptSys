@@ -1,7 +1,7 @@
 import { useState, memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Edit2, Check, X, AlertTriangle, Tag } from 'lucide-react';
-import { PromptNode as PromptNodeType, PromptCategory } from '../types';
+import { PromptNode as PromptNodeType, PromptCategory, PromptNodeType as NodeType, InvocationStrategy } from '../types';
 import { useOntologyStore } from '../stores/ontologyStore';
 
 const categoryColors: Record<PromptCategory, { bg: string; border: string; text: string }> = {
@@ -17,6 +17,38 @@ const categoryColors: Record<PromptCategory, { bg: string; border: string; text:
   [PromptCategory.TOOL]: { bg: 'bg-cyan-50', border: 'border-cyan-400', text: 'text-cyan-700' },
   [PromptCategory.WORKFLOW]: { bg: 'bg-teal-50', border: 'border-teal-400', text: 'text-teal-700' },
   [PromptCategory.UNCATEGORIZED]: { bg: 'bg-gray-50', border: 'border-gray-400', text: 'text-gray-700' },
+};
+
+// Node type badges for agentic systems
+const nodeTypeBadges: Record<NodeType, string> = {
+  [NodeType.STATIC]: 'Static',
+  [NodeType.ORCHESTRATOR]: 'Orchestrator',
+  [NodeType.SUBAGENT]: 'Sub-Agent',
+  [NodeType.TOOL]: 'Tool',
+  [NodeType.SKILL]: 'Skill',
+  [NodeType.NATIVE_CAPABILITY]: 'Native',
+  [NodeType.SYSTEM_INSTRUCTION]: 'System',
+  [NodeType.FUNCTION]: 'Function',
+};
+
+const nodeTypeColors: Record<NodeType, string> = {
+  [NodeType.STATIC]: 'bg-gray-100 text-gray-700 border-gray-300',
+  [NodeType.ORCHESTRATOR]: 'bg-purple-100 text-purple-800 border-purple-400',
+  [NodeType.SUBAGENT]: 'bg-blue-100 text-blue-800 border-blue-400',
+  [NodeType.TOOL]: 'bg-emerald-100 text-emerald-800 border-emerald-400',
+  [NodeType.SKILL]: 'bg-amber-100 text-amber-800 border-amber-400',
+  [NodeType.NATIVE_CAPABILITY]: 'bg-cyan-100 text-cyan-800 border-cyan-400',
+  [NodeType.SYSTEM_INSTRUCTION]: 'bg-indigo-100 text-indigo-800 border-indigo-400',
+  [NodeType.FUNCTION]: 'bg-pink-100 text-pink-800 border-pink-400',
+};
+
+const invocationStrategyIcons: Record<InvocationStrategy, string> = {
+  [InvocationStrategy.ALWAYS_LOADED]: '🟢',
+  [InvocationStrategy.ON_DEMAND]: '🔵',
+  [InvocationStrategy.FUNCTION_CALL]: '📞',
+  [InvocationStrategy.CONDITIONAL]: '⚡',
+  [InvocationStrategy.IMPLICIT]: '💭',
+  [InvocationStrategy.MANUAL]: '👆',
 };
 
 export const PromptNode = memo(({ data, id }: NodeProps<PromptNodeType>) => {
@@ -65,18 +97,19 @@ export const PromptNode = memo(({ data, id }: NodeProps<PromptNodeType>) => {
       <Handle type="source" position={Position.Bottom} className="w-3 h-3 !bg-blue-500" />
 
       {/* Header */}
-      <div className={`px-4 py-2 border-b-2 ${colors.border} flex items-center justify-between`}>
-        {isEditing ? (
-          <input
-            type="text"
-            value={editTitle}
-            onChange={(e) => setEditTitle(e.target.value)}
-            className="flex-1 bg-white px-2 py-1 rounded border border-gray-300 text-sm font-semibold"
-            autoFocus
-          />
-        ) : (
-          <h3 className={`font-semibold ${colors.text} text-sm flex-1`}>{data.title}</h3>
-        )}
+      <div className={`px-4 py-2 border-b-2 ${colors.border}`}>
+        <div className="flex items-center justify-between mb-2">
+          {isEditing ? (
+            <input
+              type="text"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              className="flex-1 bg-white px-2 py-1 rounded border border-gray-300 text-sm font-semibold"
+              autoFocus
+            />
+          ) : (
+            <h3 className={`font-semibold ${colors.text} text-sm flex-1`}>{data.title}</h3>
+          )}
 
         <div className="flex items-center gap-1 ml-2">
           {isEditing ? (
@@ -115,6 +148,37 @@ export const PromptNode = memo(({ data, id }: NodeProps<PromptNodeType>) => {
             </>
           )}
         </div>
+        </div>
+
+        {/* Agent metadata badges */}
+        {(data.nodeType || data.invocationStrategy) && (
+          <div className="flex items-center gap-2 flex-wrap">
+            {data.nodeType && (
+              <span
+                className={`text-xs font-semibold px-2 py-0.5 rounded border ${nodeTypeColors[data.nodeType]}`}
+                title={`Node Type: ${nodeTypeBadges[data.nodeType]}`}
+              >
+                {nodeTypeBadges[data.nodeType]}
+              </span>
+            )}
+            {data.invocationStrategy && (
+              <span
+                className="text-xs bg-gray-100 px-2 py-0.5 rounded border border-gray-300 flex items-center gap-1"
+                title={`Invocation: ${data.invocationStrategy}`}
+              >
+                <span>{invocationStrategyIcons[data.invocationStrategy]}</span>
+                <span className="text-gray-700 font-medium">
+                  {data.invocationStrategy.replace(/_/g, ' ')}
+                </span>
+              </span>
+            )}
+            {data.agentMetadata?.model && (
+              <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-200">
+                {data.agentMetadata.model}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Content */}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useOntologyStore } from '../stores/ontologyStore';
-import { PromptNode, PromptAltitude, PromptScope } from '../types';
+import { PromptNode, PromptAltitude, PromptScope, PromptNodeType, InvocationStrategy } from '../types';
 
 // Altitude colors
 const altitudeColors: Record<PromptAltitude, string> = {
@@ -35,6 +35,39 @@ const scopeColors: Record<PromptScope, string> = {
   [PromptScope.TASK]: 'bg-teal-100 text-teal-800',
   [PromptScope.LOCAL]: 'bg-amber-100 text-amber-800',
   [PromptScope.CONDITIONAL]: 'bg-rose-100 text-rose-800',
+};
+
+// Node type badges (for agentic systems)
+const nodeTypeBadges: Record<PromptNodeType, string> = {
+  [PromptNodeType.STATIC]: 'STATIC',
+  [PromptNodeType.ORCHESTRATOR]: 'ORCH',
+  [PromptNodeType.SUBAGENT]: 'AGENT',
+  [PromptNodeType.TOOL]: 'TOOL',
+  [PromptNodeType.SKILL]: 'SKILL',
+  [PromptNodeType.NATIVE_CAPABILITY]: 'NATIVE',
+  [PromptNodeType.SYSTEM_INSTRUCTION]: 'SYS',
+  [PromptNodeType.FUNCTION]: 'FUNC',
+};
+
+const nodeTypeColors: Record<PromptNodeType, string> = {
+  [PromptNodeType.STATIC]: 'bg-gray-100 text-gray-700',
+  [PromptNodeType.ORCHESTRATOR]: 'bg-purple-100 text-purple-800 ring-1 ring-purple-300',
+  [PromptNodeType.SUBAGENT]: 'bg-blue-100 text-blue-800 ring-1 ring-blue-300',
+  [PromptNodeType.TOOL]: 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-300',
+  [PromptNodeType.SKILL]: 'bg-amber-100 text-amber-800 ring-1 ring-amber-300',
+  [PromptNodeType.NATIVE_CAPABILITY]: 'bg-cyan-100 text-cyan-800 ring-1 ring-cyan-300',
+  [PromptNodeType.SYSTEM_INSTRUCTION]: 'bg-indigo-100 text-indigo-800',
+  [PromptNodeType.FUNCTION]: 'bg-pink-100 text-pink-800 ring-1 ring-pink-300',
+};
+
+// Invocation strategy indicators
+const invocationStrategyIcons: Record<InvocationStrategy, string> = {
+  [InvocationStrategy.ALWAYS_LOADED]: '🟢',
+  [InvocationStrategy.ON_DEMAND]: '🔵',
+  [InvocationStrategy.FUNCTION_CALL]: '📞',
+  [InvocationStrategy.CONDITIONAL]: '⚡',
+  [InvocationStrategy.IMPLICIT]: '💭',
+  [InvocationStrategy.MANUAL]: '👆',
 };
 
 interface TreeNodeProps {
@@ -96,6 +129,29 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, depth, isSelected, onSelect }
         >
           {altitudeBadges[altitude]}
         </span>
+
+        {/* Node type badge (for agentic systems) */}
+        {node.nodeType && (
+          <span
+            className={`
+              text-xs font-semibold px-2 py-0.5 rounded
+              ${nodeTypeColors[node.nodeType]}
+            `}
+            title={`Type: ${node.nodeType}`}
+          >
+            {nodeTypeBadges[node.nodeType]}
+          </span>
+        )}
+
+        {/* Invocation strategy indicator */}
+        {node.invocationStrategy && (
+          <span
+            className="text-sm"
+            title={`Invocation: ${node.invocationStrategy}`}
+          >
+            {invocationStrategyIcons[node.invocationStrategy]}
+          </span>
+        )}
 
         {/* Node title */}
         <span className="font-medium text-gray-900 flex-1 truncate">
@@ -208,6 +264,41 @@ export const HierarchyTree: React.FC = () => {
                   {badge}
                 </span>
               ))}
+            </div>
+          </div>
+
+          {/* Node type legend (agentic systems) */}
+          <div>
+            <p className="text-xs font-semibold text-gray-700 mb-1">Agent Types</p>
+            <div className="flex flex-wrap gap-1">
+              {[
+                PromptNodeType.ORCHESTRATOR,
+                PromptNodeType.SUBAGENT,
+                PromptNodeType.TOOL,
+                PromptNodeType.SKILL,
+                PromptNodeType.NATIVE_CAPABILITY,
+                PromptNodeType.FUNCTION
+              ].map((type) => (
+                <span
+                  key={type}
+                  className={`text-xs font-semibold px-2 py-0.5 rounded ${nodeTypeColors[type]}`}
+                >
+                  {nodeTypeBadges[type]}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Invocation strategy legend */}
+          <div>
+            <p className="text-xs font-semibold text-gray-700 mb-1">Invocation</p>
+            <div className="flex flex-wrap gap-2 text-xs text-gray-600">
+              <span title="Always loaded">🟢 Always</span>
+              <span title="On-demand">🔵 On-demand</span>
+              <span title="Function call">📞 Function</span>
+              <span title="Conditional">⚡ Conditional</span>
+              <span title="Implicit">💭 Implicit</span>
+              <span title="Manual">👆 Manual</span>
             </div>
           </div>
         </div>
