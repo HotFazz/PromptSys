@@ -3,6 +3,7 @@ import { SidePanel } from './components/SidePanel';
 import { OntologyGraph } from './components/OntologyGraph';
 import { HierarchyTree } from './components/HierarchyTree';
 import { ContextBudgetPanel } from './components/ContextBudgetPanel';
+import { NodeDetailsPanel } from './components/NodeDetailsPanel';
 import { useOntologyStore } from './stores/ontologyStore';
 import { ConflictDetector } from './utils/conflictDetector';
 
@@ -144,6 +145,9 @@ function App() {
           )}
         </div>
       </main>
+
+      {/* Node Details Panel */}
+      <NodeDetailsPanel />
     </div>
   );
 }
