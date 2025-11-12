@@ -144,8 +144,8 @@ export const SidePanel: React.FC = () => {
       edges: demoEdges,
       conflicts: [],
       suggestions: [
-        'This is agentic demo data showing a Financial Analysis Orchestrator system',
-        'Includes 1 orchestrator, 3 sub-agents, 3 on-demand skills, and 1 native capability',
+        'This is agentic demo data showing a Customer Service Orchestrator system',
+        'Includes 1 orchestrator, 3 sub-agents (Query, Order, Tech Support), 3 on-demand skills, and 1 CRM integration',
         'Demonstrates tool schemas, invocation strategies, and agent relationships'
       ],
       metadata: {
