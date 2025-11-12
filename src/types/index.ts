@@ -7,6 +7,12 @@ import {
   ActivationCondition,
   TemplateVariable
 } from './hierarchy';
+import {
+  AgentMetadata,
+  PromptNodeType,
+  InvocationStrategy,
+  AgentRelationType
+} from './agent';
 
 export interface PromptNode {
   id: string;
@@ -52,6 +58,11 @@ export interface PromptNode {
   // Optional versioning
   version?: string;
   parentVersion?: string;
+
+  // Agent-specific metadata (for agentic systems)
+  nodeType?: PromptNodeType;
+  invocationStrategy?: InvocationStrategy;
+  agentMetadata?: AgentMetadata;
 }
 
 export interface PromptEdge {
@@ -61,6 +72,12 @@ export interface PromptEdge {
   type: ConnectionType;
   label?: string;
   metadata?: EdgeMetadata;
+
+  // Agent-specific relationship (for agentic systems)
+  agentRelationType?: AgentRelationType;
+  conditional?: string;          // Condition for this relationship
+  invocationCount?: number;      // Tracking
+  avgLatency?: number;           // Performance metrics
 }
 
 export interface NodeMetadata {
@@ -164,3 +181,6 @@ export interface AIAnalysisResponse {
 
 // Re-export hierarchy types for convenience
 export * from './hierarchy';
+
+// Re-export agent types for convenience
+export * from './agent';
