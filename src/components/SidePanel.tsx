@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, Upload, FileText, Loader2, AlertCircle, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Upload, FileText, Loader2, AlertCircle, Sparkles, Network } from 'lucide-react';
 import { useOntologyStore } from '../stores/ontologyStore';
 import { getOpenAIService } from '../services/openaiService';
 import { generateDemoData } from '../utils/demoData';
+import { generateAgenticDemoData } from '../utils/agenticDemoData';
 
 export const SidePanel: React.FC = () => {
   const { isSidePanelOpen, toggleSidePanel, isAnalyzing, setIsAnalyzing, loadOntology, nodes, edges } = useOntologyStore();
@@ -136,6 +137,27 @@ export const SidePanel: React.FC = () => {
     setError(null);
   };
 
+  const handleLoadAgenticDemo = () => {
+    const { nodes: demoNodes, edges: demoEdges } = generateAgenticDemoData();
+    loadOntology({
+      nodes: demoNodes,
+      edges: demoEdges,
+      conflicts: [],
+      suggestions: [
+        'This is agentic demo data showing a Financial Analysis Orchestrator system',
+        'Includes 1 orchestrator, 3 sub-agents, 3 on-demand skills, and 1 native capability',
+        'Demonstrates tool schemas, invocation strategies, and agent relationships'
+      ],
+      metadata: {
+        totalTokens: 0,
+        nodeCount: demoNodes.length,
+        edgeCount: demoEdges.length,
+        analyzedAt: new Date()
+      }
+    });
+    setError(null);
+  };
+
   return (
     <>
       <button
@@ -224,21 +246,30 @@ export const SidePanel: React.FC = () => {
             )}
           </button>
 
-          {/* Demo Data Button */}
+          {/* Demo Data Buttons */}
           <button
             onClick={handleLoadDemo}
             disabled={isAnalyzing}
-            className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+            className="w-full px-4 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 disabled:bg-gray-700 disabled:cursor-not-allowed transition-colors flex items-center justify-center mb-3"
           >
             <Sparkles size={20} className="mr-2" />
-            Load Demo Data
+            Load Hierarchical Demo
+          </button>
+
+          <button
+            onClick={handleLoadAgenticDemo}
+            disabled={isAnalyzing}
+            className="w-full px-4 py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 disabled:bg-gray-700 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+          >
+            <Network size={20} className="mr-2" />
+            Load Agentic Demo
           </button>
 
           {/* Help Text */}
           <div className="mt-6 p-4 bg-gray-800 rounded-lg text-sm">
             <h3 className="font-semibold mb-2">How it works:</h3>
             <ol className="list-decimal list-inside space-y-1 text-gray-300">
-              <li>Try "Load Demo Data" to see the graph instantly</li>
+              <li>Try demo data (hierarchical or agentic) to explore instantly</li>
               <li>Or enter your OpenAI API key</li>
               <li>Paste or upload your system prompts</li>
               <li>Click "Analyze" to generate the ontology</li>
