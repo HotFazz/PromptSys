@@ -4,11 +4,12 @@ import { OntologyGraph } from './components/OntologyGraph';
 import { HierarchyTree } from './components/HierarchyTree';
 import { ContextBudgetPanel } from './components/ContextBudgetPanel';
 import { SkillsCatalogPanel } from './components/SkillsCatalogPanel';
+import { AgentCompositionPanel } from './components/AgentCompositionPanel';
 import { NodeDetailsPanel } from './components/NodeDetailsPanel';
 import { useOntologyStore } from './stores/ontologyStore';
 import { ConflictDetector } from './utils/conflictDetector';
 
-type ViewMode = 'graph' | 'tree' | 'budget' | 'catalog';
+type ViewMode = 'graph' | 'tree' | 'budget' | 'catalog' | 'composition';
 
 function App() {
   const { nodes, edges, setConflicts } = useOntologyStore();
@@ -99,6 +100,18 @@ function App() {
                 >
                   Skills Catalog
                 </button>
+                <button
+                  onClick={() => setViewMode('composition')}
+                  className={`
+                    px-4 py-2 text-sm font-medium transition-colors relative
+                    ${viewMode === 'composition'
+                      ? 'text-blue-600 border-b-2 border-blue-600'
+                      : 'text-gray-600 hover:text-gray-900'
+                    }
+                  `}
+                >
+                  Agent Composition
+                </button>
               </div>
             </div>
           )}
@@ -158,6 +171,13 @@ function App() {
                 <div className="h-full overflow-y-auto p-6">
                   <div className="max-w-5xl mx-auto">
                     <SkillsCatalogPanel />
+                  </div>
+                </div>
+              )}
+              {viewMode === 'composition' && (
+                <div className="h-full overflow-y-auto p-6">
+                  <div className="max-w-6xl mx-auto">
+                    <AgentCompositionPanel />
                   </div>
                 </div>
               )}
