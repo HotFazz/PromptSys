@@ -1,7 +1,6 @@
 /**
  * Demo data for agentic system ontology
- * Models a realistic multi-agent orchestrator with sub-agents, tools, and skills
- * Based on patterns from production agentic systems like SIBEL
+ * Models a realistic multi-agent call center orchestrator system
  */
 
 import {
@@ -25,55 +24,55 @@ export function generateAgenticDemoData(): { nodes: PromptNode[]; edges: PromptE
     // ========================================================================
     {
       id: `agent-orch-${timestamp}`,
-      title: 'Financial Analysis Orchestrator',
-      content: `You are a financial analysis orchestrator that coordinates multiple specialized agents to provide comprehensive market insights.
+      title: 'Customer Service Orchestrator',
+      content: `You are a customer service orchestrator that coordinates specialized agents to provide excellent customer support.
 
 Your role is to:
-1. Plan and execute research tasks by delegating to specialized sub-agents
-2. Coordinate parallel data gathering operations for efficiency
-3. Synthesize findings from multiple sources into cohesive insights
-4. Load on-demand skills when specialized analysis is needed
+1. Analyze customer inquiries and route to appropriate specialized agents
+2. Coordinate multiple agents when complex issues span different domains
+3. Ensure consistent, professional responses across all interactions
+4. Load on-demand skills when specialized capabilities are needed
 
 You have access to:
-- SEC Edgar Agent (for filing retrieval and analysis)
-- Market Data Agent (for real-time quotes and historical data)
-- Web Research Agent (for current events and documentation)
-- Code Execution (for data analysis and visualization)
-- Skills catalog (for specialized capabilities like report generation)
+- Customer Query Agent (for general questions and information)
+- Order Management Agent (for order status, returns, modifications)
+- Technical Support Agent (for product troubleshooting and technical issues)
+- CRM System (for customer history and account information)
+- Skills catalog (for email generation, knowledge base search, escalations)
 
-Always maximize parallelization and trust specialized agents for their domains.`,
+Always prioritize customer satisfaction and efficient resolution.`,
       category: PromptCategory.ROLE,
       position: { x: 0, y: 0 },
       metadata: {
         createdAt: new Date(),
         updatedAt: new Date(),
         complexity: 'high',
-        tags: ['orchestrator', 'financial-analysis', 'multi-agent']
+        tags: ['orchestrator', 'customer-service', 'multi-agent']
       },
       nodeType: PromptNodeType.ORCHESTRATOR,
       invocationStrategy: InvocationStrategy.ALWAYS_LOADED,
       altitude: PromptAltitude.META,
       scope: PromptScope.GLOBAL,
       contextPriority: 100,
-      estimatedTokens: 320,
+      estimatedTokens: 280,
       compressionHint: 'preserve',
       agentMetadata: {
         nodeType: PromptNodeType.ORCHESTRATOR,
         invocationStrategy: InvocationStrategy.ALWAYS_LOADED,
         capabilities: [
-          'task planning',
+          'inquiry routing',
           'agent coordination',
-          'parallel execution',
-          'data synthesis'
+          'quality assurance',
+          'response synthesis'
         ],
         tools: [
-          `agent-sec-${timestamp}`,
-          `agent-market-${timestamp}`,
-          `agent-web-${timestamp}`,
-          `tool-code-${timestamp}`
+          `agent-query-${timestamp}`,
+          `agent-order-${timestamp}`,
+          `agent-tech-${timestamp}`,
+          `tool-crm-${timestamp}`
         ],
         model: 'gpt-4',
-        temperature: 0.3,
+        temperature: 0.5,
         availability: 'always'
       }
     },
@@ -82,56 +81,78 @@ Always maximize parallelization and trust specialized agents for their domains.`
     // SUB-AGENTS: Specialized delegate agents
     // ========================================================================
     {
-      id: `agent-sec-${timestamp}`,
-      title: 'SEC Edgar Research Agent',
-      content: `Specialized agent for retrieving and analyzing SEC EDGAR filings (10-K, 10-Q, 8-K).
+      id: `agent-query-${timestamp}`,
+      title: 'Customer Query Agent',
+      content: `Specialized agent for handling general customer inquiries and providing information.
 
 Capabilities:
-- Precise retrieval of specific sections and line items
-- Citation with exact filing, section, and link
-- Focus on authoritative primary sources
+- Product information and specifications
+- Pricing and availability queries
+- Store hours and location information
+- General company policies and FAQs
+- Account information requests
 
-Returns structured findings with citations.`,
+Returns accurate, friendly responses with appropriate tone.`,
       category: PromptCategory.TOOL,
       position: { x: -400, y: 300 },
       metadata: {
         createdAt: new Date(),
         updatedAt: new Date(),
-        complexity: 'high',
-        tags: ['sec', 'filings', 'sub-agent', 'edgar']
+        complexity: 'medium',
+        tags: ['customer-query', 'sub-agent', 'information']
       },
       nodeType: PromptNodeType.SUBAGENT,
       invocationStrategy: InvocationStrategy.FUNCTION_CALL,
       altitude: PromptAltitude.OPERATIONAL,
       scope: PromptScope.TASK,
       contextPriority: 85,
-      estimatedTokens: 180,
+      estimatedTokens: 160,
       compressionHint: 'summarize',
       agentMetadata: {
         nodeType: PromptNodeType.SUBAGENT,
         invocationStrategy: InvocationStrategy.FUNCTION_CALL,
         capabilities: [
-          '10-K/10-Q retrieval',
-          'section extraction',
-          'citation generation',
-          'footnote analysis'
+          'product info',
+          'FAQ responses',
+          'policy explanations',
+          'store information'
         ],
         model: 'gpt-4-turbo',
         toolSchema: {
-          name: 'sec_edgar_research',
-          description: 'Retrieve SEC EDGAR filings and extract relevant sections with citations',
+          name: 'handle_customer_query',
+          description: 'Handle general customer questions and provide information',
           parameters: [
             {
-              name: 'objective',
+              name: 'customer_question',
               type: 'string',
-              description: 'Plain-language task (include ticker, filing type, sections needed)',
+              description: 'The customer\'s question or inquiry',
               required: true
+            },
+            {
+              name: 'customer_context',
+              type: 'object',
+              description: 'Optional context about the customer',
+              required: false,
+              properties: {
+                customer_id: {
+                  name: 'customer_id',
+                  type: 'string',
+                  description: 'Customer ID for personalization',
+                  required: false
+                },
+                previous_interactions: {
+                  name: 'previous_interactions',
+                  type: 'number',
+                  description: 'Number of previous support interactions',
+                  required: false
+                }
+              }
             }
           ],
           examples: [
             {
-              input: { objective: 'Get Microsoft Q3 2024 revenue from 10-Q' },
-              description: 'Retrieve specific metric from quarterly filing'
+              input: { customer_question: 'What are your store hours?' },
+              description: 'Simple information request'
             }
           ]
         },
@@ -140,81 +161,77 @@ Returns structured findings with citations.`,
     },
 
     {
-      id: `agent-market-${timestamp}`,
-      title: 'Market Data Agent',
-      content: `Specialized agent for real-time market data, company fundamentals, and economic indicators via Alpha Vantage.
+      id: `agent-order-${timestamp}`,
+      title: 'Order Management Agent',
+      content: `Specialized agent for order-related inquiries, modifications, and returns.
 
 Capabilities:
-- Real-time quotes and historical OHLCV data
-- Company financials (income statement, balance sheet, cash flow)
-- Economic indicators (GDP, CPI, unemployment, Fed rates)
-- FX rates and commodities
+- Order status tracking and updates
+- Shipping information and delivery estimates
+- Order modifications (address, items, quantity)
+- Return and refund processing
+- Cancellation requests
+- Missing or damaged item resolution
 
-Can return large datasets as file envelopes for analysis.`,
+Returns structured information with clear next steps.`,
       category: PromptCategory.TOOL,
       position: { x: 0, y: 300 },
       metadata: {
         createdAt: new Date(),
         updatedAt: new Date(),
         complexity: 'high',
-        tags: ['market-data', 'sub-agent', 'alpha-vantage', 'real-time']
+        tags: ['order-management', 'sub-agent', 'logistics']
       },
       nodeType: PromptNodeType.SUBAGENT,
       invocationStrategy: InvocationStrategy.FUNCTION_CALL,
       altitude: PromptAltitude.OPERATIONAL,
       scope: PromptScope.TASK,
-      contextPriority: 80,
+      contextPriority: 90,
       estimatedTokens: 200,
       compressionHint: 'summarize',
       agentMetadata: {
         nodeType: PromptNodeType.SUBAGENT,
         invocationStrategy: InvocationStrategy.FUNCTION_CALL,
         capabilities: [
-          'real-time quotes',
-          'historical data',
-          'company fundamentals',
-          'macro indicators',
-          'file download'
+          'order tracking',
+          'returns processing',
+          'order modifications',
+          'refund handling',
+          'shipping updates'
         ],
         model: 'gpt-4-turbo',
         toolSchema: {
-          name: 'stock_market_research',
-          description: 'Access market data, fundamentals, and economic indicators',
+          name: 'manage_order',
+          description: 'Handle order status, modifications, returns, and shipping inquiries',
           parameters: [
             {
-              name: 'objective',
+              name: 'action',
               type: 'string',
-              description: 'Task for the subagent (quotes, historical data, fundamentals, etc.)',
+              description: 'Action to perform (status, modify, return, cancel)',
+              required: true,
+              enum: ['status', 'modify', 'return', 'cancel', 'track']
+            },
+            {
+              name: 'order_id',
+              type: 'string',
+              description: 'Order number or identifier',
               required: true
             },
             {
-              name: 'symbols',
-              type: 'array',
-              description: 'Tickers or currencies (optional, can be in objective)',
-              required: false,
-              items: {
-                name: 'symbol',
-                type: 'string',
-                description: 'Stock ticker or currency pair',
-                required: false
-              }
-            },
-            {
-              name: 'file_download',
-              type: 'boolean',
-              description: 'Download file for data analysis (default: false)',
-              required: false,
-              default: false
+              name: 'details',
+              type: 'string',
+              description: 'Additional details about the request',
+              required: false
             }
           ],
           examples: [
             {
               input: {
-                objective: 'Get AAPL daily prices for last 30 days',
-                symbols: ['AAPL'],
-                file_download: true
+                action: 'status',
+                order_id: 'ORD-123456',
+                details: 'Customer wants delivery estimate'
               },
-              description: 'Download historical data for analysis'
+              description: 'Check order status and shipping info'
             }
           ]
         },
@@ -223,57 +240,83 @@ Can return large datasets as file envelopes for analysis.`,
     },
 
     {
-      id: `agent-web-${timestamp}`,
-      title: 'Web Research Agent',
-      content: `Specialized agent for gathering current information from the web using OpenAI web search.
+      id: `agent-tech-${timestamp}`,
+      title: 'Technical Support Agent',
+      content: `Specialized agent for technical issues, troubleshooting, and product support.
 
 Capabilities:
-- Real-time information retrieval
-- Current events and news
-- Technical documentation
-- Market commentary
+- Product setup and configuration guidance
+- Troubleshooting common technical issues
+- Software/firmware update instructions
+- Compatibility verification
+- Warranty information and claims
+- Replacement part recommendations
 
-Returns comprehensive answers with citations.`,
+Returns step-by-step troubleshooting guides and solutions.`,
       category: PromptCategory.TOOL,
       position: { x: 400, y: 300 },
       metadata: {
         createdAt: new Date(),
         updatedAt: new Date(),
-        complexity: 'medium',
-        tags: ['web-search', 'sub-agent', 'research']
+        complexity: 'high',
+        tags: ['technical-support', 'sub-agent', 'troubleshooting']
       },
       nodeType: PromptNodeType.SUBAGENT,
       invocationStrategy: InvocationStrategy.FUNCTION_CALL,
       altitude: PromptAltitude.OPERATIONAL,
       scope: PromptScope.TASK,
-      contextPriority: 70,
-      estimatedTokens: 150,
+      contextPriority: 85,
+      estimatedTokens: 190,
       compressionHint: 'summarize',
       agentMetadata: {
         nodeType: PromptNodeType.SUBAGENT,
         invocationStrategy: InvocationStrategy.FUNCTION_CALL,
         capabilities: [
-          'web search',
-          'current events',
-          'documentation lookup',
-          'fact checking'
+          'troubleshooting',
+          'setup guidance',
+          'compatibility checks',
+          'warranty support',
+          'technical diagnostics'
         ],
         model: 'gpt-4-turbo',
         toolSchema: {
-          name: 'web_search',
-          description: 'Search the web for current information with citations',
+          name: 'technical_support',
+          description: 'Provide technical troubleshooting and product support',
           parameters: [
             {
-              name: 'objective',
+              name: 'issue_description',
               type: 'string',
-              description: 'Plain-language search task',
+              description: 'Description of the technical issue',
               required: true
+            },
+            {
+              name: 'product_info',
+              type: 'object',
+              description: 'Product details',
+              required: false,
+              properties: {
+                product_name: {
+                  name: 'product_name',
+                  type: 'string',
+                  description: 'Product name or model',
+                  required: false
+                },
+                serial_number: {
+                  name: 'serial_number',
+                  type: 'string',
+                  description: 'Product serial number',
+                  required: false
+                }
+              }
             }
           ],
           examples: [
             {
-              input: { objective: 'Find latest news about Apple AI initiatives' },
-              description: 'Current events search'
+              input: {
+                issue_description: 'Device won\'t turn on after charging',
+                product_info: { product_name: 'SmartWatch Pro' }
+              },
+              description: 'Troubleshoot power issue'
             }
           ]
         },
@@ -282,48 +325,49 @@ Returns comprehensive answers with citations.`,
     },
 
     // ========================================================================
-    // NATIVE CAPABILITY: Code Interpreter
+    // NATIVE CAPABILITY: CRM Integration
     // ========================================================================
     {
-      id: `tool-code-${timestamp}`,
-      title: 'Code Interpreter',
-      content: `Native Python code execution capability with full conversation context.
+      id: `tool-crm-${timestamp}`,
+      title: 'CRM System Integration',
+      content: `Native integration with Customer Relationship Management system.
 
 Capabilities:
-- Data analysis with pandas, numpy, scipy
-- Visualizations with matplotlib, seaborn, plotly
-- Statistical modeling with sklearn, statsmodels
-- Direct access to FileEnvelopes from market data agent
-- Iterative refinement with context preservation
+- Customer profile and history lookup
+- Previous interaction records
+- Purchase history and preferences
+- Account status and tier information
+- Contact information verification
+- Note logging and case management
 
-Environment: Sandboxed container with /mnt/data/ for file storage.`,
+Access: Real-time data from production CRM database.`,
       category: PromptCategory.TOOL,
       position: { x: -200, y: 600 },
       metadata: {
         createdAt: new Date(),
         updatedAt: new Date(),
         complexity: 'high',
-        tags: ['code-execution', 'native', 'python', 'data-analysis']
+        tags: ['crm', 'native', 'database', 'customer-data']
       },
       nodeType: PromptNodeType.NATIVE_CAPABILITY,
       invocationStrategy: InvocationStrategy.CONDITIONAL,
       altitude: PromptAltitude.IMPLEMENTATION,
       scope: PromptScope.CONDITIONAL,
-      contextPriority: 75,
-      estimatedTokens: 160,
+      contextPriority: 80,
+      estimatedTokens: 140,
       compressionHint: 'optional',
       agentMetadata: {
         nodeType: PromptNodeType.NATIVE_CAPABILITY,
         invocationStrategy: InvocationStrategy.CONDITIONAL,
         capabilities: [
-          'Python execution',
-          'data analysis',
-          'visualization',
-          'file access',
-          'iterative analysis'
+          'customer lookup',
+          'interaction history',
+          'purchase records',
+          'account management',
+          'case logging'
         ],
         availability: 'conditional',
-        catalogSummary: 'Execute Python code for analysis and visualization'
+        catalogSummary: 'Access customer data and interaction history from CRM'
       }
     },
 
@@ -331,78 +375,67 @@ Environment: Sandboxed container with /mnt/data/ for file storage.`,
     // SKILLS: On-demand capabilities
     // ========================================================================
     {
-      id: `skill-word-${timestamp}`,
-      title: 'Word Document Export',
-      content: `Generate professional Word documents (.docx) with formatted content, tables, and charts.
+      id: `skill-email-${timestamp}`,
+      title: 'Email Response Generator',
+      content: `Generate professional, empathetic email responses for customer support.
 
 Usage:
-1. Gather and prepare content
-2. Structure sections and tables
-3. Call this skill to generate .docx file
+1. Gather issue details and resolution steps
+2. Determine appropriate tone and urgency
+3. Call this skill to generate polished email
 
-Supports:
-- Multiple sections with hierarchical headings
-- Tables with styling
-- Embedded charts and images
-- Custom formatting and styles
+Features:
+- Professional business tone
+- Empathy and personalization
+- Clear structure with greeting, body, closing
+- Action items and next steps
+- Contact information and signatures
 
-Output: Returns .docx file reference for download.`,
+Output: Ready-to-send email text.`,
       category: PromptCategory.FORMAT,
       position: { x: 200, y: 600 },
       metadata: {
         createdAt: new Date(),
         updatedAt: new Date(),
         complexity: 'medium',
-        tags: ['export', 'word', 'docx', 'skill', 'report']
+        tags: ['email', 'communication', 'skill', 'writing']
       },
       nodeType: PromptNodeType.SKILL,
       invocationStrategy: InvocationStrategy.ON_DEMAND,
       altitude: PromptAltitude.IMPLEMENTATION,
       scope: PromptScope.LOCAL,
       contextPriority: 50,
-      estimatedTokens: 2400,
+      estimatedTokens: 1800,
       compressionHint: 'defer',
       agentMetadata: {
         nodeType: PromptNodeType.SKILL,
         invocationStrategy: InvocationStrategy.ON_DEMAND,
-        triggers: ['word', 'docx', 'document', 'export', 'report', '.docx'],
-        catalogSummary: 'Generate formatted Word documents with tables and charts',
-        exampleUsage: 'load_skill("skill-word") when user requests Word export',
+        triggers: ['email', 'write email', 'send email', 'email response', 'compose'],
+        catalogSummary: 'Generate professional email responses with appropriate tone',
+        exampleUsage: 'load_skill("skill-email") when email communication needed',
         toolSchema: {
-          name: 'generate_word_document',
-          description: 'Create a formatted Word document',
+          name: 'generate_email_response',
+          description: 'Create a professional email response',
           parameters: [
             {
-              name: 'title',
+              name: 'situation',
               type: 'string',
-              description: 'Document title',
+              description: 'Brief description of the customer situation',
               required: true
             },
             {
-              name: 'sections',
-              type: 'array',
-              description: 'Document sections',
-              required: true,
-              items: {
-                name: 'section',
-                type: 'object',
-                description: 'Section with heading and content',
-                required: true,
-                properties: {
-                  heading: {
-                    name: 'heading',
-                    type: 'string',
-                    description: 'Section heading',
-                    required: true
-                  },
-                  content: {
-                    name: 'content',
-                    type: 'string',
-                    description: 'Section content (markdown supported)',
-                    required: true
-                  }
-                }
-              }
+              name: 'resolution',
+              type: 'string',
+              description: 'How the issue was or will be resolved',
+              required: true
+            },
+            {
+              name: 'tone',
+              type: 'string',
+              description: 'Email tone (apologetic, informative, friendly)',
+              required: false,
+              enum: ['apologetic', 'informative', 'friendly', 'formal'],
+              default: 'friendly'
             }
           ]
         },
@@ -412,97 +445,97 @@ Output: Returns .docx file reference for download.`,
     },
 
     {
-      id: `skill-pdf-${timestamp}`,
-      title: 'PDF Report Generation',
-      content: `Generate professional PDF reports with charts, tables, and formatted text.
+      id: `skill-kb-${timestamp}`,
+      title: 'Knowledge Base Search',
+      content: `Search internal knowledge base for relevant articles, policies, and procedures.
 
 Usage:
-1. Prepare report content and visualizations
-2. Structure layout and sections
-3. Call this skill to generate PDF
+1. Identify information need or customer question
+2. Formulate search query
+3. Call this skill to retrieve relevant documentation
 
-Features:
-- Professional templates
-- Embedded charts and images
-- Table of contents
-- Page numbering and headers/footers
+Capabilities:
+- Full-text search across all documentation
+- Policy and procedure lookup
+- Product manuals and guides
+- Troubleshooting articles
+- Best practices and tips
 
-Output: Returns PDF file reference for download.`,
-      category: PromptCategory.FORMAT,
+Output: Relevant articles with summaries and links.`,
+      category: PromptCategory.TOOL,
       position: { x: 400, y: 600 },
       metadata: {
         createdAt: new Date(),
         updatedAt: new Date(),
         complexity: 'medium',
-        tags: ['export', 'pdf', 'skill', 'report']
+        tags: ['knowledge-base', 'search', 'skill', 'documentation']
       },
       nodeType: PromptNodeType.SKILL,
       invocationStrategy: InvocationStrategy.ON_DEMAND,
-      altitude: PromptAltitude.IMPLEMENTATION,
-      scope: PromptScope.LOCAL,
-      contextPriority: 45,
-      estimatedTokens: 2200,
+      altitude: PromptAltitude.OPERATIONAL,
+      scope: PromptScope.TASK,
+      contextPriority: 70,
+      estimatedTokens: 2100,
       compressionHint: 'defer',
       agentMetadata: {
         nodeType: PromptNodeType.SKILL,
         invocationStrategy: InvocationStrategy.ON_DEMAND,
-        triggers: ['pdf', 'report', 'export', '.pdf', 'download pdf'],
-        catalogSummary: 'Generate professional PDF reports with charts and tables',
-        exampleUsage: 'load_skill("skill-pdf") when user wants PDF export',
-        loadPriority: 55,
+        triggers: ['kb', 'knowledge base', 'search docs', 'find article', 'documentation', 'policy'],
+        catalogSummary: 'Search internal knowledge base for policies, guides, and articles',
+        exampleUsage: 'load_skill("skill-kb") to find relevant documentation',
+        loadPriority: 75,
         availability: 'always'
       }
     },
 
     {
-      id: `skill-advanced-${timestamp}`,
-      title: 'Advanced Financial Analysis',
-      content: `Perform sophisticated financial analysis including:
+      id: `skill-escalate-${timestamp}`,
+      title: 'Escalation Handler',
+      content: `Handle escalations to human agents and management with proper context transfer.
 
-- DCF valuation models
-- Monte Carlo simulations
-- Risk analysis (VaR, CVaR)
-- Portfolio optimization
-- Regression analysis
-- Time series forecasting
+Usage:
+1. Determine escalation is necessary (complex issue, angry customer, policy exception)
+2. Prepare escalation context and summary
+3. Call this skill to initiate escalation workflow
 
-Requires:
-- Historical data from market agent
-- Company fundamentals
-- Code interpreter for calculations
+Features:
+- Priority routing based on severity
+- Complete context transfer to human agent
+- Customer sentiment analysis
+- Escalation reason documentation
+- SLA tracking and notifications
 
-Output: Detailed analysis with visualizations and insights.`,
+Output: Escalation ticket with routing information.`,
       category: PromptCategory.WORKFLOW,
       position: { x: 0, y: 800 },
       metadata: {
         createdAt: new Date(),
         updatedAt: new Date(),
         complexity: 'high',
-        tags: ['analysis', 'valuation', 'skill', 'financial-modeling']
+        tags: ['escalation', 'workflow', 'skill', 'human-handoff']
       },
       nodeType: PromptNodeType.SKILL,
       invocationStrategy: InvocationStrategy.ON_DEMAND,
       altitude: PromptAltitude.TACTICAL,
       scope: PromptScope.TASK,
-      contextPriority: 65,
-      estimatedTokens: 3500,
+      contextPriority: 85,
+      estimatedTokens: 2600,
       compressionHint: 'defer',
       agentMetadata: {
         nodeType: PromptNodeType.SKILL,
         invocationStrategy: InvocationStrategy.ON_DEMAND,
         triggers: [
-          'dcf',
-          'valuation',
-          'monte carlo',
-          'var',
-          'risk analysis',
-          'portfolio optimization',
-          'forecasting'
+          'escalate',
+          'manager',
+          'supervisor',
+          'human agent',
+          'talk to person',
+          'speak to representative'
         ],
-        catalogSummary: 'Advanced financial modeling: DCF, Monte Carlo, risk analysis, optimization',
-        exampleUsage: 'load_skill("skill-advanced") for complex financial analysis',
-        dependencies: [`tool-code-${timestamp}`, `agent-market-${timestamp}`],
-        loadPriority: 70,
+        catalogSummary: 'Escalate complex issues to human agents with full context',
+        exampleUsage: 'load_skill("skill-escalate") when human intervention needed',
+        dependencies: [`tool-crm-${timestamp}`],
+        loadPriority: 90,
         availability: 'always'
       }
     }
@@ -511,94 +544,86 @@ Output: Detailed analysis with visualizations and insights.`,
   const edges: PromptEdge[] = [
     // Orchestrator → Sub-agents
     {
-      id: `edge-orch-sec-${timestamp}`,
+      id: `edge-orch-query-${timestamp}`,
       source: `agent-orch-${timestamp}`,
-      target: `agent-sec-${timestamp}`,
+      target: `agent-query-${timestamp}`,
       type: ConnectionType.DEPENDS_ON,
-      label: 'delegates filing research',
+      label: 'routes general inquiries',
       agentRelationType: AgentRelationType.ORCHESTRATES,
       invocationCount: 0,
-      avgLatency: 2500
+      avgLatency: 1200
     },
     {
-      id: `edge-orch-market-${timestamp}`,
+      id: `edge-orch-order-${timestamp}`,
       source: `agent-orch-${timestamp}`,
-      target: `agent-market-${timestamp}`,
+      target: `agent-order-${timestamp}`,
       type: ConnectionType.DEPENDS_ON,
-      label: 'delegates market data',
+      label: 'routes order issues',
       agentRelationType: AgentRelationType.ORCHESTRATES,
       invocationCount: 0,
-      avgLatency: 1800
+      avgLatency: 1500
     },
     {
-      id: `edge-orch-web-${timestamp}`,
+      id: `edge-orch-tech-${timestamp}`,
       source: `agent-orch-${timestamp}`,
-      target: `agent-web-${timestamp}`,
+      target: `agent-tech-${timestamp}`,
       type: ConnectionType.DEPENDS_ON,
-      label: 'delegates web research',
+      label: 'routes technical support',
       agentRelationType: AgentRelationType.ORCHESTRATES,
       invocationCount: 0,
-      avgLatency: 3200
+      avgLatency: 2000
     },
 
     // Orchestrator → Native capability
     {
-      id: `edge-orch-code-${timestamp}`,
+      id: `edge-orch-crm-${timestamp}`,
       source: `agent-orch-${timestamp}`,
-      target: `tool-code-${timestamp}`,
+      target: `tool-crm-${timestamp}`,
       type: ConnectionType.DEPENDS_ON,
-      label: 'uses for analysis',
+      label: 'accesses customer data',
       agentRelationType: AgentRelationType.USES_TOOL,
-      conditional: 'when code execution is needed',
+      conditional: 'when customer context needed',
       invocationCount: 0,
-      avgLatency: 5000
+      avgLatency: 800
     },
 
     // Orchestrator → Skills (on-demand)
     {
-      id: `edge-orch-word-${timestamp}`,
+      id: `edge-orch-email-${timestamp}`,
       source: `agent-orch-${timestamp}`,
-      target: `skill-word-${timestamp}`,
+      target: `skill-email-${timestamp}`,
       type: ConnectionType.RELATED_TO,
       label: 'loads on demand',
       agentRelationType: AgentRelationType.LOADS_SKILL,
-      conditional: 'when Word export requested',
+      conditional: 'when email response needed',
       invocationCount: 0
     },
     {
-      id: `edge-orch-pdf-${timestamp}`,
+      id: `edge-orch-kb-${timestamp}`,
       source: `agent-orch-${timestamp}`,
-      target: `skill-pdf-${timestamp}`,
+      target: `skill-kb-${timestamp}`,
       type: ConnectionType.RELATED_TO,
       label: 'loads on demand',
       agentRelationType: AgentRelationType.LOADS_SKILL,
-      conditional: 'when PDF export requested',
+      conditional: 'when documentation lookup needed',
       invocationCount: 0
     },
     {
-      id: `edge-orch-advanced-${timestamp}`,
+      id: `edge-orch-escalate-${timestamp}`,
       source: `agent-orch-${timestamp}`,
-      target: `skill-advanced-${timestamp}`,
+      target: `skill-escalate-${timestamp}`,
       type: ConnectionType.RELATED_TO,
       label: 'loads on demand',
       agentRelationType: AgentRelationType.LOADS_SKILL,
-      conditional: 'when advanced analysis requested',
+      conditional: 'when escalation required',
       invocationCount: 0
     },
 
     // Skill dependencies
     {
-      id: `edge-advanced-code-${timestamp}`,
-      source: `skill-advanced-${timestamp}`,
-      target: `tool-code-${timestamp}`,
-      type: ConnectionType.DEPENDS_ON,
-      label: 'requires',
-      agentRelationType: AgentRelationType.DEPENDS_ON
-    },
-    {
-      id: `edge-advanced-market-${timestamp}`,
-      source: `skill-advanced-${timestamp}`,
-      target: `agent-market-${timestamp}`,
+      id: `edge-escalate-crm-${timestamp}`,
+      source: `skill-escalate-${timestamp}`,
+      target: `tool-crm-${timestamp}`,
       type: ConnectionType.DEPENDS_ON,
       label: 'requires',
       agentRelationType: AgentRelationType.DEPENDS_ON
