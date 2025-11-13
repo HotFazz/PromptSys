@@ -5,7 +5,8 @@ import {
   Conflict,
   OntologyAnalysis,
   PromptAltitude,
-  PromptScope
+  PromptScope,
+  AgentMetadata
 } from '../types';
 import {
   ContextWindow,
@@ -28,11 +29,15 @@ interface OntologyStore {
   // Actions
   addNode: (node: PromptNode) => void;
   updateNode: (id: string, updates: Partial<PromptNode>) => void;
+  updateNodeMetadata: (id: string, metadata: Partial<AgentMetadata>) => void;
   deleteNode: (id: string) => void;
 
   addEdge: (edge: PromptEdge) => void;
   updateEdge: (id: string, updates: Partial<PromptEdge>) => void;
   deleteEdge: (id: string) => void;
+
+  // Bulk operations
+  bulkCreateNodes: (nodes: PromptNode[], edges?: PromptEdge[]) => void;
 
   setConflicts: (conflicts: Conflict[]) => void;
   clearConflict: (id: string) => void;
@@ -94,6 +99,20 @@ export const useOntologyStore = create<OntologyStore>((set, get) => ({
     )
   })),
 
+  updateNodeMetadata: (id, metadata) => set((state) => ({
+    nodes: state.nodes.map(node =>
+      node.id === id
+        ? {
+            ...node,
+            agentMetadata: node.agentMetadata
+              ? { ...node.agentMetadata, ...metadata }
+              : metadata as AgentMetadata,
+            metadata: { ...node.metadata, updatedAt: new Date() }
+          }
+        : node
+    )
+  })),
+
   deleteNode: (id) => set((state) => ({
     nodes: state.nodes.filter(node => node.id !== id),
     edges: state.edges.filter(edge => edge.source !== id && edge.target !== id),
@@ -113,6 +132,11 @@ export const useOntologyStore = create<OntologyStore>((set, get) => ({
   deleteEdge: (id) => set((state) => ({
     edges: state.edges.filter(edge => edge.id !== id),
     conflicts: state.conflicts.filter(conflict => !conflict.edgeIds?.includes(id))
+  })),
+
+  bulkCreateNodes: (nodes, edges) => set((state) => ({
+    nodes: [...state.nodes, ...nodes],
+    edges: edges ? [...state.edges, ...edges] : state.edges
   })),
 
   setConflicts: (conflicts) => set({ conflicts }),

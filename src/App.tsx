@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { SidePanel } from './components/SidePanel';
+import { ConsolePanel } from './components/console/ConsolePanel';
 import { OntologyGraph } from './components/OntologyGraph';
 import { HierarchyTree } from './components/HierarchyTree';
 import { ContextBudgetPanel } from './components/ContextBudgetPanel';
@@ -25,7 +25,7 @@ function App() {
 
   return (
     <div className="h-screen w-screen flex bg-gray-100">
-      <SidePanel />
+      <ConsolePanel />
       <main className="flex-1 flex flex-col">
         {/* Header */}
         <header className="bg-white shadow-sm z-10">
